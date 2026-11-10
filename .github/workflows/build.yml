@@ -14,9 +14,18 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 9.5.1
-      - run: unzip -q "$(ls *.zip | head -1)" -d work
-      - run: gradle build --no-daemon
+      - run: unzip -q "$(ls -t *.zip | head -1)" -d work
+      - name: Build
         working-directory: work/AutoPvP-Client
+        run: |
+          set +e
+          gradle build --no-daemon 2>&1 | tee build.log
+          code=${PIPESTATUS[0]}
+          echo '### Compile errors' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -A2 "error:" build.log | sed 's#.*/com/macepvp/##' | head -120 >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          exit $code
       - uses: actions/upload-artifact@v4
         with:
           name: AutoPvP_jar
